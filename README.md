@@ -13,9 +13,9 @@ esphome:
   name: somfycontroller
 
 external_components:
-  - source: github://HarmEllis/esphome-cc1101@main
+  - source: github://Davrosx/esphome-cc1101@main
     components: [ cc1101 ]
-  - source: github://HarmEllis/esphome-somfy-cover-remote@main
+  - source: github://Davrosx/esphome-somfy-cover-remote@main
     components: [ somfy_cover ]
 
 esp32:
@@ -126,6 +126,6 @@ Put your cover in program mode with another remote, then use the `Program x` but
 The *Somfy_Remote_Lib* library defaults to sending a command four times. Some devices do not handle this well and should only reveive the command one time. For these devices the optional parameter `repeat_command_count` can be set in the yaml for the cover.
 
 ## Credits
-I originally used the ESPHome custom component from [evgeni](https://github.com/evgeni/esphome-configs/) after I found his article [Controlling Somfy roller shutters using an ESP32 and ESPHome](https://www.die-welt.net/2021/06/controlling-somfy-roller-shutters-using-an-esp32-and-esphome/).
+Project originally used the ESPHome custom component from [evgeni](https://github.com/evgeni/esphome-configs/) after finding his article [Controlling Somfy roller shutters using an ESP32 and ESPHome](https://www.die-welt.net/2021/06/controlling-somfy-roller-shutters-using-an-esp32-and-esphome/).
 
-But I wanted to be able to specify the cover position by used the ESPHome [Time Based Cover](https://esphome.io/components/cover/time_based.html) component. I used the code from evgeni as as base and used the ESPHome Custom component option to implement this. Since the Custom component option is deprecated and removed, I needed another solution. Therefore I created this external component.
+Project needed to be able to specify the cover position by used the ESPHome [Time Based Cover](https://esphome.io/components/cover/time_based.html) component. Code was used from evgeni as as base and used the ESPHome Custom component option to implement this. Since the Custom component option is deprecated and removed, the project needed another solution. Therefore this external component was created.
