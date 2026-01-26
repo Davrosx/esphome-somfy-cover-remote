@@ -6,83 +6,85 @@ namespace somfy_cover {
 
 static const char *TAG = "somfy_cover.cover";
 
-// Default value
-bool cc1101I_initialized = false;
-
 void SomfyCover::setup() {
-  // Setup cover rolling code storage
-  this->storage_ = new NVSRollingCodeStorage(NVS_ROLLING_CODE_STORAGE, this->storage_key_);
+  ESP_LOGCONFIG(TAG, "Setting up Somfy Cover '%s'...", this->get_name().c_str());
 
-  // Setup the Somfy Remote
-  this->remote_ = new SomfyRemote(this->cc1101_module_->get_emitter_pin(), this->remote_code_, this->storage_);
+  // Use member initialisation if possible, or ensure these are deleted in the destructor
+  this->storage_ = std::make_unique<NVSRollingCodeStorage>(NVS_ROLLING_CODE_STORAGE, this->storage_key_);
+
+  this->remote_ = std::make_unique<SomfyRemote>(
+      this->cc1101_module_->get_emitter_pin(), 
+      this->remote_code_, 
+      this->storage_.get()
+  );
   this->remote_->setup();
 
-  // Attach to timebased cover controls
-  automationTriggerUp_ = new Automation<>(this->get_open_trigger());
-  actionTriggerUp = new SomfyCoverAction<>([=, this] { return this->open(); });
-  automationTriggerUp_->add_action(actionTriggerUp);
+  // Optimized Automation Triggers
+  auto setup_trigger = [this](Trigger<> *trigger, Command cmd) {
+    auto *action = new SomfyCoverAction<>([this, cmd] { this->send_command(cmd); });
+    auto *automation = new Automation<>(trigger);
+    automation->add_action(action);
+  };
 
-  automationTriggerDown_ = new Automation<>(this->get_close_trigger());
-  actionTriggerDown_ = new SomfyCoverAction<>([=, this] { return this->close(); });
-  automationTriggerDown_->add_action(actionTriggerDown_);
+  setup_trigger(this->get_open_trigger(), Command::Up);
+  setup_trigger(this->get_close_trigger(), Command::Down);
+  setup_trigger(this->get_stop_trigger(), Command::My);
 
-  automationTriggerStop_ = new Automation<>(this->get_stop_trigger());
-  actionTriggerStop_ = new SomfyCoverAction<>([=, this] { return this->stop(); });
-  automationTriggerStop_->add_action(actionTriggerStop_);
+  // Attach the prog button callback
+  if (this->cover_prog_button_ != nullptr) {
+    this->cover_prog_button_->add_on_press_callback([this] { this->program(); });
+  }
 
-  // Attach the prog button
-  this->cover_prog_button_->add_on_press_callback([=, this] { return this->program(); });
-
-  // Set extra settings
   this->has_built_in_endstop_ = true;
   this->assumed_state_ = true;
 
   TimeBasedCover::setup();
 }
 
-void SomfyCover::loop() { TimeBasedCover::loop(); }
+void SomfyCover::loop() { 
+  TimeBasedCover::loop(); 
+}
 
-void SomfyCover::dump_config() { ESP_LOGCONFIG(TAG, "Somfy cover"); }
+void SomfyCover::dump_config() {
+  LOG_COVER(TAG, "Somfy Cover", this);
+  ESP_LOGCONFIG(TAG, "  Remote Code: 0x%06X", this->remote_code_);
+}
 
 cover::CoverTraits SomfyCover::get_traits() {
   auto traits = TimeBasedCover::get_traits();
   traits.set_supports_tilt(false);
-
   return traits;
 }
 
-void SomfyCover::control(const cover::CoverCall &call) { TimeBasedCover::control(call); }
+void SomfyCover::control(const cover::CoverCall &call) { 
+  TimeBasedCover::control(call); 
+}
 
 void SomfyCover::open() {
-  char buf[OBJECT_ID_MAX_LEN];
-  std::string command = "OPEN " + this->get_object_id_to(buf);
-  ESP_LOGI("somfy", command.c_str());
+  ESP_LOGI(TAG, "'%s': Sending OPEN command", this->get_name().c_str());
   this->send_command(Command::Up);
 }
 
 void SomfyCover::close() {
-  char buf[OBJECT_ID_MAX_LEN];
-  std::string command = "CLOSE " + this->get_object_id_to(buf);
-  ESP_LOGI("somfy", command.c_str());
+  ESP_LOGI(TAG, "'%s': Sending CLOSE command", this->get_name().c_str());
   this->send_command(Command::Down);
 }
 
 void SomfyCover::stop() {
-  char buf[OBJECT_ID_MAX_LEN];
-  std::string command = "STOP " + this->get_object_id_to(buf);
-  ESP_LOGI("somfy", command.c_str());
+  ESP_LOGI(TAG, "'%s': Sending STOP command", this->get_name().c_str());
   this->send_command(Command::My);
 }
 
 void SomfyCover::program() {
-  char buf[OBJECT_ID_MAX_LEN];
-  std::string command = "PROG " + this->get_object_id_to(buf);
-  ESP_LOGI("somfy", command.c_str());
+  ESP_LOGW(TAG, "'%s': Sending PROG command", this->get_name().c_str());
   this->send_command(Command::Prog);
 }
 
 void SomfyCover::send_command(Command command) {
-  this->cc1101_module_->sent_command([=, this] { this->remote_->sendCommand(command, this->repeat_count_); });
+  // Queue the command through the CC1101 module to prevent SPI collisions
+  this->cc1101_module_->sent_command([this, command] { 
+    this->remote_->sendCommand(command, this->repeat_count_); 
+  });
 }
 
 }  // namespace somfy_cover
