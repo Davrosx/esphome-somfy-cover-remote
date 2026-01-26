@@ -54,25 +54,29 @@ cover::CoverTraits SomfyCover::get_traits() {
 void SomfyCover::control(const cover::CoverCall &call) { TimeBasedCover::control(call); }
 
 void SomfyCover::open() {
-  std::string command = "OPEN " + this->get_object_id_to();
+  char buf[OBJECT_ID_MAX_LEN];
+  std::string command = "OPEN " + this->get_object_id_to(buf);
   ESP_LOGI("somfy", command.c_str());
   this->send_command(Command::Up);
 }
 
 void SomfyCover::close() {
-  std::string command = "CLOSE " + this->get_object_id_to();
+  char buf[OBJECT_ID_MAX_LEN];
+  std::string command = "CLOSE " + this->get_object_id_to(buf);
   ESP_LOGI("somfy", command.c_str());
   this->send_command(Command::Down);
 }
 
 void SomfyCover::stop() {
-  std::string command = "STOP " + this->get_object_id_to();
+  char buf[OBJECT_ID_MAX_LEN];
+  std::string command = "STOP " + this->get_object_id_to(buf);
   ESP_LOGI("somfy", command.c_str());
   this->send_command(Command::My);
 }
 
 void SomfyCover::program() {
-  std::string command = "PROG " + this->get_object_id_to();
+  char buf[OBJECT_ID_MAX_LEN];
+  std::string command = "PROG " + this->get_object_id_to(buf);
   ESP_LOGI("somfy", command.c_str());
   this->send_command(Command::Prog);
 }
