@@ -3,7 +3,6 @@ from esphome.components import button, cc1101, cover
 import esphome.config_validation as cv
 from esphome.const import (
     CONF_CLOSE_DURATION,
-    CONF_ID,
     CONF_OPEN_DURATION,
     PLATFORM_ESP32,
     PLATFORM_ESP8266,
@@ -12,7 +11,7 @@ from esphome.const import (
 
 CODEOWNERS = ["@HarmEllis"]
 
-AUTO_LOAD = ["button", "time_based"]
+AUTO_LOAD = ["button"]
 
 DEPENDENCIES = ["esp32"]
 
@@ -29,7 +28,6 @@ CONFIG_SCHEMA = cv.All(
     cover.cover_schema(SomfyCover)
     .extend(
         {
-            cv.GenerateID(): cv.declare_id(SomfyCover),
             cv.Required(CONF_PROG_BUTTON): cv.use_id(button.Button),
             cv.Required(CONF_CC1101_MODULE): cv.use_id(cc1101.CC1101),
             cv.Required(CONF_OPEN_DURATION): cv.positive_time_period_milliseconds,
@@ -45,15 +43,14 @@ CONFIG_SCHEMA = cv.All(
 
 
 async def to_code(config):
-    var = cg.new_Pvariable(config[CONF_ID])
+    var = await cover.new_cover(config)
+    await cg.register_component(var, config)
     cg.add_library("EEPROM", None)
     cg.add_library(
         "Somfy_Remote_Lib",
         None,
         "https://github.com/Legion2/Somfy_Remote_Lib.git#v0.5.0",
     )
-    await cg.register_component(var, config)
-    await cover.register_cover(var, config)
 
     cc1101_module = await cg.get_variable(config[CONF_CC1101_MODULE])
     cg.add(var.set_cc1101_module(cc1101_module))
