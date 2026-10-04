@@ -47,7 +47,11 @@ CONFIG_SCHEMA = cv.All(
 async def to_code(config):
     var = cg.new_Pvariable(config[CONF_ID])
     cg.add_library("EEPROM", None)
-    cg.add_library("Somfy_Remote_Lib", "0.4.1")
+    cg.add_library(
+        "Somfy_Remote_Lib",
+        None,
+        "https://github.com/Legion2/Somfy_Remote_Lib.git#v0.5.0",
+    )
     await cg.register_component(var, config)
     await cover.register_cover(var, config)
 
